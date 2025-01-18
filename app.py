@@ -8,7 +8,7 @@ from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import Routes
-from routes import base_site, register_middlewares
+from routes import base_site, auth, admin, register_middlewares
 
 from lib.logging_module import CustomLogger
 from lib.mysql_module import MySQLDatabase
@@ -37,6 +37,7 @@ main_logger = CustomLogger(os.getenv('LOG_LEVEL', 1), f'{app_name}',
 
 try:
     db = MySQLDatabase()
+    db._init_db()
     main_logger.info("MySQL Database connected successfully.")
 except Exception as e:
     main_logger.error(f'Error while <<connecting>> to the <<MySQL Database:>> {e}')
@@ -94,6 +95,12 @@ sess.init_app(app)
 
 # Register base site /
 app.register_blueprint(base_site, url_prefix='/')
+
+# Register auth routes /auth
+app.register_blueprint(auth, url_prefix='/auth')
+
+# Register Admin Routes /admin
+app.register_blueprint(admin, url_prefix='/admin')
 
 # Register Middleware
 register_middlewares(app)

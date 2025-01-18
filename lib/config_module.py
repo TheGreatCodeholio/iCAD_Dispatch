@@ -3,87 +3,85 @@
 
 """
 Author: Ian Carey
-Date: 2019-21-05
-Description: This script loads configuration data from .env
-Usage: In main script use load_dotenv() from python-dotenv
-
-Requirements:
-- Python 3.12+
-- dotenv~=1.0.1
+Date: 2025-1-17
+Description: This script loads configuration data from MySQL Database
 """
 
 import logging
-import os
 
 module_logger = logging.getLogger('icad_dispatch.config')
 
-config_data_template = {
-    "log_level": 1,
-    "mysql": {
-        "host": None,
-        "port": 3306,
-        "user": None,
-        "password": None,
-        "database": None
-    },
-    "redis": {
-        "host": None,
-        "port": 6379,
-        "password": None,
-        "db": 0,
-        "mysql_cache_db": 4
-    }
-}
+def init_config(db):
+    default_config = [
+    ]
 
-
-def load_config_data():
+def get_config(db, config_key=None):
     """
-    Loads the configuration data from a .env file and returns a populated config_data dict.
+    Fetch configuration settings from the database and return as a dictionary.
+
+    Args:
+        db: Database connection object.
+        config_key (str, optional): Specific config key to fetch. Fetches all if None.
 
     Returns:
-        dict: Configuration data populated with values from the .env file.
-
-    Raises:
-        ValueError: If required environment variables are missing.
+        dict: Configuration settings as a dictionary where keys are `config_key` and values are `config_value`.
+    """
+    base_query = """
+    SELECT 
+      ac.config_key,
+      ac.config_value,
+      ac.description
+    FROM
+      app_config ac
     """
 
-    # Populate config_data with environment variables
-    config_data = config_data_template.copy()
+    params = None
+    if config_key:
+        base_query += " WHERE ac.config_key = %s"
+        params = (config_key,)
 
-    try:
-        config_data["log_level"] = int(os.getenv("LOG_LEVEL", config_data["log_level"]))
+    config_result = db.execute_query(base_query, params)
 
-        # MySQL Configuration
-        config_data["mysql"]["host"] = os.getenv("MYSQL_HOST")
-        config_data["mysql"]["port"] = int(os.getenv("MYSQL_PORT", config_data["mysql"]["port"]))
-        config_data["mysql"]["user"] = os.getenv("MYSQL_USER")
-        config_data["mysql"]["password"] = os.getenv("MYSQL_PASSWORD")
-        config_data["mysql"]["database"] = os.getenv("MYSQL_DATABASE")
+    if not config_result.get('success'):
+        return {}
 
-        # Redis Configuration
-        config_data["redis"]["host"] = os.getenv("REDIS_HOST")
-        config_data["redis"]["port"] = int(os.getenv("REDIS_PORT", config_data["redis"]["port"]))
-        config_data["redis"]["password"] = os.getenv("REDIS_PASSWORD")
-        config_data["redis"]["db"] = int(os.getenv("REDIS_DB", config_data["redis"]["db"]))
-        config_data["redis"]["mysql_cache_db"] = int(
-            os.getenv("REDIS_MYSQL_CACHE_DB", config_data["redis"]["mysql_cache_db"]))
+    # Convert result to a dictionary
+    result = config_result.get('result', [])
+    config_dict = {row['config_key']: row['config_value'] for row in result}
 
-        # Validate required fields
-        required_fields = [
-            ("MYSQL_HOST", config_data["mysql"]["host"]),
-            ("MYSQL_USER", config_data["mysql"]["user"]),
-            ("MYSQL_PASSWORD", config_data["mysql"]["password"]),
-            ("MYSQL_DATABASE", config_data["mysql"]["database"]),
-            ("REDIS_HOST", config_data["redis"]["host"]),
-            ("REDIS_PASSWORD", config_data["redis"]["password"])
-        ]
+    return config_dict
 
-        for field_name, value in required_fields:
-            if not value:
-                raise ValueError(f"Missing required environment variable: {field_name}")
+def set_config(db, config_key, config_value, description=None):
+    """
+    Add or update a configuration setting in the database.
 
-    except ValueError as e:
-        module_logger.error(f"Error loading configuration: {e}")
-        raise
+    Args:
+        db: Database connection object.
+        config_key (str): The configuration key.
+        config_value (str): The configuration value.
+        description (str, optional): Description of the configuration.
 
-    return config_data
+    Returns:
+        dict: Operation result with success status and message.
+    """
+    # Check if the config key exists
+    check_query = "SELECT 1 FROM app_config WHERE config_key = %s"
+    result = db.execute_query(check_query, (config_key,), fetch_mode="one")
+
+    if result.get('success') and result.get('result'):
+        # Key exists, update it
+        update_query = """
+        UPDATE app_config 
+        SET config_value = %s, description = %s
+        WHERE config_key = %s
+        """
+        params = (config_value, description, config_key)
+        return db.execute_query(update_query, params)
+    else:
+        # Key doesn't exist, insert it
+        insert_query = """
+        INSERT INTO app_config (config_key, config_value, description)
+        VALUES (%s, %s, %s)
+        """
+        params = (config_key, config_value, description)
+        return db.execute_query(insert_query, params)

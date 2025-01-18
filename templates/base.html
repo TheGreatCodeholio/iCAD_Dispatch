@@ -28,7 +28,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form role="form" action="" method="post">
+                <form role="form" action="{{ url_for('auth.auth_login') }}" method="post">
                     <div class="form-group mb-3">
                         <label for="username"><i class="fa fa-user"></i> Username</label>
                         <input type="text" name="username" class="form-control" id="username"
@@ -65,12 +65,7 @@
                     <a class="nav-link" href="{{ url_for('base_site.base_site_index') }}">Home</a>
                 </li>
                 {% if session.get('authenticated') %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="">Systems</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="">Filters</a>
-                    </li>
+
                 {% endif %}
             </ul>
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
@@ -89,9 +84,9 @@
                             Admin Menu
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-{#                            <a class="dropdown-item" href="{{ url_for('edit_systems') }}">System Config</a>#}
+                            <a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">Dashboard</a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="">Logout</a>
+                            <a class="dropdown-item" href="{{ url_for('auth.auth_logout') }}">Logout</a>
                         </div>
                     </li>
                 {% endif %}

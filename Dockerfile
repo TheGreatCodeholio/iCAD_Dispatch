@@ -35,4 +35,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 9911
 
 # Default command to run the Flask app
-CMD ["gunicorn", "-b", "0.0.0.0:9911", "app:app"]
+CMD ["/home/icad_dispatch/.local/bin/gunicorn", "-b", "0.0.0.0:9911", "app:app"]

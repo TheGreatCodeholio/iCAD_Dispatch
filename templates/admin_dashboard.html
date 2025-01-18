@@ -1,0 +1,62 @@
+<!-- index.html -->
+{% extends "base.html" %}
+{% block title %}Dashbaord - iCAD Dispatch{% endblock %}
+{% block content %}
+
+    <h4>Welcome {{ session["username"] }}</h4>
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog"
+         aria-labelledby="changePasswordModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="change-password-form" action="{{ url_for('auth.auth_change_password') }}" method="POST">
+                        <div class="form-group mb-3">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-4">
+            <h4>Change Password</h4>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">Change
+                Password
+            </button>
+        </div>
+    </div>
+<script>
+document.getElementById('change-password-form').onsubmit = function() {
+    let newPassword = document.getElementById('newPassword').value;
+    let confirmPassword = document.getElementById('confirmPassword').value;
+
+    // Check if both passwords match
+    if (newPassword !== confirmPassword) {
+        showAlert('New Password and Confirm Password do not match.', 'danger');
+        return false; // Prevent form submission
+    }
+    return true; // Allow form submission if passwords match
+};
+</script>
+{% endblock %}

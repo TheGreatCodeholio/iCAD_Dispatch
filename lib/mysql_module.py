@@ -23,12 +23,14 @@ import logging
 import math
 import os
 import re
+import time
 from decimal import Decimal
 
+import bcrypt
 import mysql.connector
 import redis
 
-module_logger = logging.getLogger('flask_login.mysql')
+module_logger = logging.getLogger('icad_dispatch.mysql')
 
 class MySQLDatabase:
     """
@@ -81,6 +83,33 @@ class MySQLDatabase:
             password=self.redis_password,
             db=int(os.getenv("REDIS_MYSQL_CACHE_DB"))
         )
+
+    def _init_db(self):
+
+        query = "SELECT * FROM users WHERE user_username = %s"
+        params = ("admin",)
+        try:
+            admin_user = self.execute_query(query, params, fetch_mode="one")
+        except mysql.connector.Error as e:
+            module_logger.error(f"Failed to query database: {e}")
+            return False
+
+        if not admin_user['result']:
+            try:
+                password_hash = bcrypt.hashpw("admin".encode(), bcrypt.gensalt())
+                query = "INSERT INTO users (user_username, user_password) VALUES (%s, %s)"
+                params = ('admin', password_hash)
+                self.execute_commit(query, params)
+
+                module_logger.info("Admin user created successfully.")
+                return True
+            except mysql.connector.Error as e:
+                module_logger.error(f"Failed to create admin user: {e}")
+                return False
+        else:
+            module_logger.debug("Admin user already exists.")
+            return True
+
 
     def _cache_query(self, key, result, tables, params, ttl=86400):
         """

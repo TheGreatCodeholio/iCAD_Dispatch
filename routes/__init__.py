@@ -3,6 +3,8 @@
 from flask import Flask
 from routes.middleware import log_ip, inject_csrf_token
 from routes.base_site.base_site import base_site  # Import the Blueprint from base_site
+from routes.auth.auth import auth
+from routes.admin.admin import admin
 
 def register_middlewares(app: Flask):
     """Registers global middlewares for the Flask app."""
